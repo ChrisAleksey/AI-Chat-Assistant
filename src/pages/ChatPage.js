@@ -6,6 +6,9 @@ import Sidebar from '../components/Sidebar';
 import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
 import Header from '../components/Header';
+import AuthStatus from '../components/AuthStatus';
+import LoadingFallback from '../components/LoadingFallback';
+import usePuterScript from '../hooks/usePuterScript';
 
 const ChatContainer = styled(Box)(({ theme }) => ({
   flex: 1,
@@ -36,9 +39,13 @@ const ChatPage = () => {
   const [enterKeyBehavior, setEnterKeyBehavior] = useState('send');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPuterReady, setIsPuterReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const messagesEndRef = useRef(null);
+  
+  // Use the custom hook for Puter script loading
+  usePuterScript();
 
   useEffect(() => {
     if (isMobile) {
@@ -50,25 +57,29 @@ const ChatPage = () => {
     scrollToBottom();
   }, [selectedChat?.messages]);
 
+  // Check for Puter availability
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://js.puter.com/v2/';
-    script.async = true;
+    let checkCount = 0;
+    const maxChecks = 100; // 10 seconds total (100ms * 100)
     
-    script.onload = () => {
-      // Wait for window.puter to be available
-      const checkPuter = setInterval(() => {
-        if (window.puter) {
-          setIsPuterReady(true);
-          clearInterval(checkPuter);
-        }
-      }, 100);
-    };
-    
-    document.body.appendChild(script);
+    const checkPuter = setInterval(() => {
+      checkCount++;
+      
+      if (window.puter) {
+        console.log('Puter is ready');
+        setIsPuterReady(true);
+        setIsLoading(false);
+        clearInterval(checkPuter);
+      } else if (checkCount >= maxChecks) {
+        console.warn('Puter failed to load within timeout period');
+        setIsLoading(false); // Stop loading even if Puter didn't load
+        clearInterval(checkPuter);
+      }
+    }, 100);
 
+    // Cleanup interval on unmount
     return () => {
-      document.body.removeChild(script);
+      clearInterval(checkPuter);
     };
   }, []);
 
@@ -98,7 +109,13 @@ const ChatPage = () => {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || !selectedChat || !isPuterReady) return;
+    if (!input.trim() || !selectedChat) return;
+
+    // Check if Puter is ready and available
+    if (!isPuterReady || !window.puter) {
+      console.error('Puter is not ready or available');
+      return;
+    }
 
     const userMessage = { id: uuidv4(), role: 'user', content: input };
     const aiMessage = { id: uuidv4(), role: 'ai', content: '' };
@@ -123,31 +140,59 @@ const ChatPage = () => {
     };
 
     try {
+      // Check if user is authenticated
+      if (!window.puter.auth || !window.puter.auth.isSignedIn) {
+        throw new Error('Authentication required. Please sign in to Puter.');
+      }
+
       const responseStream = await window.puter.ai.chat(input, options);
       let fullResponse = '';
 
       for await (const part of responseStream) {
         fullResponse += part?.text || '';
+        
+        // Use functional updates to avoid closure issues
+        const currentResponse = fullResponse;
+        const currentAiMessageId = aiMessage.id;
+        const currentSelectedChatId = selectedChat.id;
+        
         setSelectedChat(prevChat => {
           const newMessages = [...prevChat.messages];
-          const aiMsgIndex = newMessages.findIndex(msg => msg.id === aiMessage.id);
+          const aiMsgIndex = newMessages.findIndex(msg => msg.id === currentAiMessageId);
           if (aiMsgIndex !== -1) {
-            newMessages[aiMsgIndex] = { ...newMessages[aiMsgIndex], content: fullResponse };
+            newMessages[aiMsgIndex] = { ...newMessages[aiMsgIndex], content: currentResponse };
           }
           return { ...prevChat, messages: newMessages };
         });
         
         setChats(prevChats =>
           prevChats.map(chat =>
-            chat.id === selectedChat.id
-              ? { ...chat, messages: [...selectedChat.messages.slice(0, -1), { ...aiMessage, content: fullResponse }] }
+            chat.id === currentSelectedChatId
+              ? { 
+                  ...chat, 
+                  messages: chat.messages.map(msg => 
+                    msg.id === currentAiMessageId 
+                      ? { ...msg, content: currentResponse }
+                      : msg
+                  )
+                }
               : chat
           )
         );
       }
     } catch (error) {
       console.error('Error:', error);
-      const errorMessage = 'Error: Unable to fetch response.';
+      let errorMessage = 'Error: Unable to fetch response.';
+      
+      // Provide more specific error messages
+      if (error.message.includes('Authentication')) {
+        errorMessage = 'Error: Authentication required. Please sign in to Puter first.';
+      } else if (error.message.includes('401')) {
+        errorMessage = 'Error: Unauthorized. Please check your Puter authentication.';
+      } else if (error.message.includes('Network')) {
+        errorMessage = 'Error: Network issue. Please check your connection.';
+      }
+      
       setSelectedChat(prevChat => {
         const newMessages = [...prevChat.messages];
         const aiMsgIndex = newMessages.findIndex(msg => msg.id === aiMessage.id);
@@ -173,6 +218,11 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Show loading screen while initializing
+  if (isLoading) {
+    return <LoadingFallback message="Initializing AI Chat Assistant..." />;
+  }
+
   return (
     <Box
       sx={{
@@ -196,6 +246,7 @@ const ChatPage = () => {
           isMobile={isMobile}
         />
         <ChatContainer>
+          <AuthStatus isPuterReady={isPuterReady} />
           {selectedChat?.messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}

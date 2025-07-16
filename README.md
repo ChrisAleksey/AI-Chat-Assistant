@@ -1,4 +1,116 @@
-# AI-Chat-Assistant
+# AI Chat Assistant
+
+Una aplicación de chat con IA construida con React que utiliza la API de Puter para interactuar con modelos de IA como Claude.
+
+## Características
+
+- 🤖 Chat con IA usando modelos Claude y otros
+- 💬 Múltiples conversaciones simultáneas
+- 🎨 Interfaz moderna con Material-UI
+- 📱 Diseño responsivo
+- 🔐 Autenticación con Puter
+- ⚡ Streaming de respuestas en tiempo real
+
+## Correcciones Implementadas
+
+Este proyecto ha sido corregido para resolver los siguientes errores:
+
+### ✅ Error de CustomElementRegistry
+- **Problema**: `the name "puter-dialog" has already been used with this registry`
+- **Solución**: Implementado hook personalizado `usePuterScript` que evita la carga duplicada del script de Puter
+
+### ✅ Error de Script genérico
+- **Problema**: `Uncaught runtime errors: Script error`
+- **Solución**: 
+  - Agregado Error Boundary para capturar errores de React
+  - Implementado manejo global de errores
+  - Deshabilitado StrictMode temporalmente para evitar conflictos con React 19
+  - Corregidos warnings de ESLint sobre funciones en loops
+
+### ✅ Error 401 de autenticación
+- **Problema**: `Failed to load resource: the server responded with a status of 401`
+- **Solución**: 
+  - Agregado componente AuthStatus para mostrar estado de autenticación
+  - Implementado manejo de errores específicos para autenticación
+  - Agregadas verificaciones de disponibilidad de Puter antes de hacer llamadas
+
+## Instalación y Uso
+
+1. **Instalar dependencias**:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+2. **Ejecutar en modo desarrollo**:
+   ```bash
+   npm start
+   ```
+
+3. **Construir para producción**:
+   ```bash
+   npm run build
+   ```
+
+## Autenticación con Puter
+
+Para usar la aplicación, necesitas:
+
+1. Tener una cuenta en [Puter](https://puter.com)
+2. Hacer clic en "Sign In" cuando aparezca el mensaje de autenticación
+3. Autorizar la aplicación para usar la API de Puter
+
+## Estructura del Proyecto
+
+```
+src/
+├── components/          # Componentes reutilizables
+│   ├── AuthStatus.js   # Estado de autenticación
+│   ├── ErrorBoundary.js # Manejo de errores
+│   ├── LoadingFallback.js # Pantalla de carga
+│   └── ...
+├── hooks/              # Hooks personalizados
+│   └── usePuterScript.js # Carga segura del script de Puter
+├── pages/              # Páginas principales
+│   └── ChatPage.js     # Página principal del chat
+├── utils/              # Utilidades
+│   └── errorHandler.js # Manejo de errores
+└── ...
+```
+
+## Tecnologías Utilizadas
+
+- React 19
+- Material-UI (MUI)
+- Framer Motion
+- Puter API
+- Emotion (CSS-in-JS)
+
+## Solución de Problemas
+
+### Si sigues viendo errores:
+
+1. **Limpia la caché del navegador**:
+   - Ctrl+Shift+R (Windows/Linux)
+   - Cmd+Shift+R (Mac)
+
+2. **Reinicia el servidor de desarrollo**:
+   ```bash
+   npm start
+   ```
+
+3. **Verifica la consola del navegador** para mensajes de error específicos
+
+4. **Asegúrate de estar autenticado en Puter** antes de enviar mensajes
+
+## Contribuir
+
+Si encuentras algún error o quieres contribuir:
+
+1. Fork el proyecto
+2. Crea una rama para tu feature
+3. Commit tus cambios
+4. Push a la rama
+5. Abre un Pull Request
 >This React version evolved from an [original HTML/CSS implementation](https://github.com/usualdork/EndlessClaude). <br>
 Because using vanilla HTML/CSS/JS is like saying "I use Windows" when you could say "I use Arch BTW" 😉 <br>
 ![image](https://github.com/user-attachments/assets/bc15e912-346b-4bec-8641-8c19802c93f1)
