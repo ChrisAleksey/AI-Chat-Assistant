@@ -6,7 +6,7 @@ import Sidebar from '../components/Sidebar';
 import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
 import Header from '../components/Header';
-import AuthStatus from '../components/AuthStatus';
+import AuthButton from '../components/AuthButton';
 import LoadingFallback from '../components/LoadingFallback';
 import usePuterScript from '../hooks/usePuterScript';
 
@@ -40,6 +40,8 @@ const ChatPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isPuterReady, setIsPuterReady] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const messagesEndRef = useRef(null);
@@ -140,9 +142,9 @@ const ChatPage = () => {
     };
 
     try {
-      // Check if user is authenticated
-      if (!window.puter.auth || !window.puter.auth.isSignedIn) {
-        throw new Error('Authentication required. Please sign in to Puter.');
+      // Check if user is authenticated through our simulation
+      if (!isAuthenticated) {
+        throw new Error('Please sign in first using the Sign In button above.');
       }
 
       const responseStream = await window.puter.ai.chat(input, options);
@@ -218,6 +220,49 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleSimulateAuth = async () => {
+    if (!isPuterReady || !window.puter || isAuthenticating) return;
+
+    setIsAuthenticating(true);
+    console.log('Simulating authentication with hidden message...');
+
+    const options = {
+      stream: true,
+      model: model === 'model1' ? 'claude-3-5-sonnet' : undefined,
+    };
+
+    try {
+      // Send hidden authentication message
+      const authMessage = "Hola, me he autenticado";
+      console.log('Sending auth simulation message:', authMessage);
+      
+      const responseStream = await window.puter.ai.chat(authMessage, options);
+      
+      // Consume the response but don't show it
+      let authResponse = '';
+      for await (const part of responseStream) {
+        authResponse += part?.text || '';
+      }
+      
+      console.log('Auth simulation successful, response received');
+      console.log('Auth response preview:', authResponse.substring(0, 100) + '...');
+      
+      // Mark as authenticated
+      setIsAuthenticated(true);
+      
+    } catch (error) {
+      console.error('Auth simulation failed:', error);
+      // Even if it fails, the popup should have appeared and auth should be established
+      // Check if we're now authenticated
+      if (window.puter.auth && window.puter.auth.isSignedIn) {
+        console.log('Auth established despite error');
+        setIsAuthenticated(true);
+      }
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
   // Show loading screen while initializing
   if (isLoading) {
     return <LoadingFallback message="Initializing AI Chat Assistant..." />;
@@ -246,7 +291,12 @@ const ChatPage = () => {
           isMobile={isMobile}
         />
         <ChatContainer>
-          <AuthStatus isPuterReady={isPuterReady} />
+          <AuthButton 
+            isPuterReady={isPuterReady}
+            isAuthenticated={isAuthenticated}
+            isAuthenticating={isAuthenticating}
+            onSignIn={handleSimulateAuth}
+          />
           {selectedChat?.messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
@@ -257,7 +307,13 @@ const ChatPage = () => {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onSend={handleSend}
-        disabled={loading || !selectedChat || !isPuterReady}
+        disabled={loading || !selectedChat || !isPuterReady || !isAuthenticated}
+        placeholder={
+          !isPuterReady ? "Loading Puter..." :
+          !isAuthenticated ? "Please sign in first to start chatting..." :
+          loading ? "AI is thinking..." :
+          "Type your message here..."
+        }
         model={model}
         onModelChange={(e) => setModel(e.target.value)}
         enterKeyBehavior={enterKeyBehavior}
