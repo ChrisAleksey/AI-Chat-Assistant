@@ -263,7 +263,23 @@ const ChatPage = () => {
         throw new Error('Please sign in first using the Sign In button above.');
       }
 
-      const responseStream = await window.puter.ai.chat(input, options);
+      // Prepare messages array for context (based on puterdoc.md line 299 example)
+      const messagesForContext = selectedChat.messages
+        .filter(msg => msg.role !== 'ai' || msg.content.trim()) // Skip empty AI messages
+        .map(msg => ({
+          role: msg.role === 'ai' ? 'assistant' : 'user',
+          content: msg.content
+        }));
+      
+      // Add the current user message
+      messagesForContext.push({ role: 'user', content: input });
+      
+      console.log('🔍 Frontend sending messages for context:', messagesForContext);
+      
+      // Use messages array if multiple messages, otherwise single input
+      const puterInput = messagesForContext.length > 1 ? messagesForContext : input;
+      
+      const responseStream = await window.puter.ai.chat(puterInput, options);
       let fullResponse = '';
 
       for await (const part of responseStream) {
