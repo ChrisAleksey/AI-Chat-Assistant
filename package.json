@@ -23,7 +23,7 @@
   },
   "scripts": {
     "start": "concurrently \"npm run start:frontend\" \"npm run start:server\"",
-    "start:frontend": "react-scripts start",
+    "start:frontend": "BROWSER='open -a Safari --args --private' react-scripts start",
     "start:server": "cd server && npm install && npm start",
     "build": "react-scripts build",
     "test": "react-scripts test",
