@@ -1,6 +1,6 @@
-# AI Chat Assistant
+# AI Chat Assistant con API OpenAI Compatible
 
-Una aplicación de chat con IA construida con React que utiliza la API de Puter para interactuar con modelos de IA como Claude.
+Una aplicación de chat con IA construida con React que utiliza la API de Puter para interactuar con modelos de IA como Claude, y expone una API compatible con OpenAI para usar en otros proyectos.
 
 ## Características
 
@@ -10,6 +10,8 @@ Una aplicación de chat con IA construida con React que utiliza la API de Puter 
 - 📱 Diseño responsivo
 - 🔐 Autenticación con Puter
 - ⚡ Streaming de respuestas en tiempo real
+- 🔌 **API OpenAI Compatible** - Endpoint `/v1/chat/completions`
+- 🌐 **Servidor Express** integrado para API externa
 
 ## Correcciones Implementadas
 
@@ -41,15 +43,81 @@ Este proyecto ha sido corregido para resolver los siguientes errores:
    npm install --legacy-peer-deps
    ```
 
-2. **Ejecutar en modo desarrollo**:
+2. **Ejecutar en modo desarrollo (React + Express)**:
    ```bash
    npm start
    ```
+   Esto iniciará:
+   - Frontend React en http://localhost:3000
+   - API Server Express en http://localhost:3001
 
 3. **Construir para producción**:
    ```bash
    npm run build
    ```
+
+## Uso de la API OpenAI Compatible
+
+### 1. Autenticación Requerida
+Primero debes autenticarte usando la interfaz web:
+1. Ve a http://localhost:3000
+2. Haz clic en "Sign In" para autenticarte con Puter
+3. Una vez autenticado, el token se compartirá automáticamente con el servidor
+
+### 2. Usar la API desde otros proyectos
+
+```javascript
+// Ejemplo con cliente OpenAI
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: 'dummy-key', // No se requiere key real
+  baseURL: 'http://localhost:3001/v1'
+});
+
+const completion = await openai.chat.completions.create({
+  model: 'gpt-3.5-turbo',
+  messages: [
+    { role: 'user', content: 'Hello, how are you?' }
+  ],
+  stream: true
+});
+
+for await (const chunk of completion) {
+  console.log(chunk.choices[0]?.delta?.content || '');
+}
+```
+
+```bash
+# Ejemplo con curl
+curl -X POST http://localhost:3001/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ],
+    "stream": false
+  }'
+```
+
+## Endpoints API
+
+### `POST /v1/chat/completions`
+Endpoint principal compatible con OpenAI.
+
+**Parámetros:**
+- `model`: "gpt-3.5-turbo" o "gpt-4" (ambos usan claude-3-5-sonnet)
+- `messages`: Array de mensajes del chat
+- `stream`: boolean para activar streaming
+- `max_tokens`: número máximo de tokens (opcional)
+- `temperature`: temperatura del modelo (opcional)
+
+### `GET /v1/models`
+Lista los modelos disponibles.
+
+### `GET /health`
+Health check del servidor.
 
 ## Autenticación con Puter
 
