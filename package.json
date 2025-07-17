@@ -10,8 +10,6 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
-    "axios": "^1.7.9",
-    "concurrently": "^8.2.2",
     "framer-motion": "^11.18.1",
     "lucide-react": "^0.473.0",
     "react": "^19.0.0",
@@ -22,9 +20,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "concurrently \"npm run start:frontend\" \"npm run start:server\"",
-    "start:frontend": "BROWSER='open -a Safari --args --private' react-scripts start",
-    "start:server": "cd server && npm install && npm start",
+    "start": "BROWSER='open -a Safari --args --private' react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
