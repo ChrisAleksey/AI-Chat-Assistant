@@ -267,6 +267,10 @@ const ChatPage = () => {
       // Mark as authenticated
       setIsAuthenticated(true);
       
+      // Share Puter session with API
+      global.puterSession = window.puter;
+      console.log('🔗 Puter session shared with API');
+      
     } catch (error) {
       console.error('Auth simulation failed:', error);
       // Even if it fails, the popup should have appeared and auth should be established
@@ -274,6 +278,10 @@ const ChatPage = () => {
       if (window.puter.auth && window.puter.auth.isSignedIn) {
         console.log('Auth established despite error');
         setIsAuthenticated(true);
+        
+        // Share Puter session with API
+        global.puterSession = window.puter;
+        console.log('🔗 Puter session shared with API');
       }
     } finally {
       setIsAuthenticating(false);
